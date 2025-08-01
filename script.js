@@ -209,9 +209,12 @@ class PanelPlacementApp {
 
         // Sonuçları hesapla
         const results = this.calculateResults(totalArea);
+        
+        // Beşon hesaplamalarını yap
+        const beamRequirements = this.calculateBeamRequirements(areaWidth, areaHeight);
 
         // Sonuçları göster
-        this.displayResults(results);
+        this.displayResults(results, beamRequirements);
         this.drawVisualization(areaCmWidth, areaCmHeight);
 
         // Sonuçlar bölümünü göster
@@ -330,6 +333,49 @@ class PanelPlacementApp {
         return pos1.x < pos2.x;
     }
 
+    // Beşon hesaplama
+    calculateBeamRequirements(areaWidth, areaHeight) {
+        // Alan boyutları metre cinsinden
+        const widthM = areaWidth;
+        const heightM = areaHeight;
+        
+        // Kısa ve uzun kenarları bul
+        const shortEdgeM = Math.min(widthM, heightM);
+        const longEdgeM = Math.max(widthM, heightM);
+        const longEdgeCm = longEdgeM * 100;
+        
+        // Beşon sayısı: uzun kenar cm / 50
+        const beamCount = Math.ceil(longEdgeCm / 50);
+        
+        // Beşon boyutu: kısa kenara göre
+        let beamType = '';
+        
+        if (shortEdgeM >= 4) {
+            // 4 metre ve üzeri
+            beamType = '4m';
+        } else if (shortEdgeM >= 3) {
+            // 3-3.99 metre arası
+            beamType = '3m';
+        } else if (shortEdgeM >= 2) {
+            // 2-2.99 metre arası
+            beamType = '2m';
+        } else {
+            // 2 metreden kısa
+            beamType = 'Kısa beşon gerekli';
+        }
+        
+        return {
+            beam4m: beamType === '4m' ? beamCount : 0,
+            beam3m: beamType === '3m' ? beamCount : 0,
+            beam2m: beamType === '2m' ? beamCount : 0,
+            shortBeamWarning: beamType === 'Kısa beşon gerekli',
+            shortEdgeM: shortEdgeM,
+            longEdgeM: longEdgeM,
+            beamCount: beamCount,
+            beamType: beamType
+        };
+    }
+
     // Sonuçları hesapla
     calculateResults(totalAreaM2) {
         const panelCounts = {};
@@ -355,7 +401,7 @@ class PanelPlacementApp {
     }
 
     // Sonuçları göster
-    displayResults(results) {
+    displayResults(results, beamRequirements) {
         this.elements.usedPanelsCount.textContent = results.totalPanels;
         this.elements.remainingArea.textContent = results.remainingArea.toFixed(2);
         this.elements.efficiency.textContent = results.efficiency.toFixed(1);
@@ -369,7 +415,32 @@ class PanelPlacementApp {
                 </div>
             `).join('');
 
-        this.elements.panelDetailsList.innerHTML = detailsHTML;
+        // Beşon hesaplamalarını ekle
+        const beamHTML = `
+            <div class="beam-calculations">
+                <h4><i class="fas fa-ruler"></i> Tahmini Beşon İhtiyacı</h4>
+                <div class="beam-info">
+                    <small>Kısa kenar: ${beamRequirements.shortEdgeM.toFixed(2)}m | Uzun kenar: ${beamRequirements.longEdgeM.toFixed(2)}m</small>
+                </div>
+                ${beamRequirements.shortBeamWarning ? 
+                    `<div class="beam-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Kısa beşon gerekli (2m altı)
+                    </div>` : 
+                    `<div class="beam-details">
+                        <div class="beam-item">
+                            <span class="beam-type">${beamRequirements.beamType} beşon:</span>
+                            <span class="beam-count">${beamRequirements.beamCount} adet</span>
+                        </div>
+                        <div class="beam-calculation-note">
+                            <small>Hesaplama: Uzun kenar (${beamRequirements.longEdgeM.toFixed(2)}m) ÷ 0.5m = ${beamRequirements.beamCount} adet</small>
+                        </div>
+                    </div>`
+                }
+            </div>
+        `;
+
+        this.elements.panelDetailsList.innerHTML = detailsHTML + beamHTML;
     }
 
     // Görselleştirme çiz
