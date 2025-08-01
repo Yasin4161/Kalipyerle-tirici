@@ -168,7 +168,7 @@ input[type="number"]:focus {
     border-radius: 8px;
     margin-bottom: 10px;
     display: flex;
-    justify-content: between;
+    justify-content: space-between;
     align-items: center;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
@@ -182,8 +182,8 @@ input[type="number"]:focus {
 .panel-info {
     flex: 1;
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
+    gap: 5px;
 }
 
 .panel-size {
@@ -192,11 +192,55 @@ input[type="number"]:focus {
     background: #e9ecef;
     padding: 5px 10px;
     border-radius: 5px;
+    width: fit-content;
 }
 
 .panel-area {
     color: #6c757d;
     font-size: 0.9rem;
+}
+
+.panel-total {
+    color: #667eea;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.panel-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.panel-count-display {
+    background: #667eea;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    min-width: 30px;
+    text-align: center;
+}
+
+.btn-count {
+    background: #f8f9fa;
+    color: #667eea;
+    border: 2px solid #667eea;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-count:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
 }
 
 /* Checkbox Stili */
@@ -462,8 +506,14 @@ input[type="number"]:focus {
     
     .panel-item {
         flex-direction: column;
-        gap: 10px;
+        gap: 15px;
         text-align: center;
+        align-items: stretch;
+    }
+
+    .panel-actions {
+        justify-content: center;
+        flex-wrap: wrap;
     }
     
     .canvas-header {
