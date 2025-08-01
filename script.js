@@ -21,6 +21,7 @@ class PanelPlacementApp {
         this.elements = {
             panelWidth: document.getElementById('panelWidth'),
             panelHeight: document.getElementById('panelHeight'),
+            panelCount: document.getElementById('panelCount'),
             addPanelBtn: document.getElementById('addPanelBtn'),
             panelsList: document.getElementById('panelsList'),
             emptyPanels: document.getElementById('emptyPanels'),
@@ -51,6 +52,9 @@ class PanelPlacementApp {
         this.elements.panelHeight.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.addPanel();
         });
+        this.elements.panelCount.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.addPanel();
+        });
 
         // Enter tuşu ile hesaplama
         this.elements.areaWidth.addEventListener('keypress', (e) => {
@@ -69,6 +73,7 @@ class PanelPlacementApp {
     addPanel() {
         const width = parseFloat(this.elements.panelWidth.value);
         const height = parseFloat(this.elements.panelHeight.value);
+        const count = parseInt(this.elements.panelCount.value) || 1;
 
         // Validasyon
         if (!width || !height || width <= 0 || height <= 0) {
@@ -76,29 +81,40 @@ class PanelPlacementApp {
             return;
         }
 
-        // Aynı panel var mı kontrol et
-        const exists = this.panels.some(panel => 
-            panel.width === width && panel.height === height
-        );
-
-        if (exists) {
-            this.showToast('Bu boyutta panel zaten mevcut!', 'warning');
+        if (count <= 0) {
+            this.showToast('Panel adedi 1 veya daha fazla olmalı!', 'error');
             return;
         }
 
-        // Panel ekle
-        const panel = { width, height, area: width * height };
-        this.panels.push(panel);
+        // Aynı panel var mı kontrol et
+        const existingIndex = this.panels.findIndex(panel => 
+            panel.width === width && panel.height === height
+        );
+
+        if (existingIndex !== -1) {
+            // Mevcut panelin sayısını artır
+            this.panels[existingIndex].count += count;
+            this.showToast(`${count} adet ${width}×${height} panel eklendi! Toplam: ${this.panels[existingIndex].count} adet`, 'success');
+        } else {
+            // Yeni panel ekle
+            const panel = { 
+                width, 
+                height, 
+                count, 
+                area: width * height 
+            };
+            this.panels.push(panel);
+            this.showToast(`${count} adet ${width}×${height} panel başarıyla eklendi!`, 'success');
+        }
 
         // Form'u temizle
         this.elements.panelWidth.value = '';
         this.elements.panelHeight.value = '';
+        this.elements.panelCount.value = '1';
 
         // Liste güncelle
         this.updatePanelsList();
         this.savePanels();
-
-        this.showToast('Panel başarıyla eklendi!', 'success');
     }
 
     // Paneli sil
@@ -107,6 +123,28 @@ class PanelPlacementApp {
         this.updatePanelsList();
         this.savePanels();
         this.showToast('Panel silindi!', 'success');
+    }
+
+    // Panel sayısını artır
+    increasePanel(index) {
+        if (!this.panels[index].count) this.panels[index].count = 1;
+        this.panels[index].count++;
+        this.updatePanelsList();
+        this.savePanels();
+        this.showToast('Panel sayısı artırıldı!', 'success');
+    }
+
+    // Panel sayısını azalt
+    decreasePanel(index) {
+        if (!this.panels[index].count) this.panels[index].count = 1;
+        if (this.panels[index].count > 1) {
+            this.panels[index].count--;
+            this.updatePanelsList();
+            this.savePanels();
+            this.showToast('Panel sayısı azaltıldı!', 'success');
+        } else {
+            this.showToast('Panel sayısı 1\'den az olamaz!', 'warning');
+        }
     }
 
     // Panel listesini güncelle
@@ -124,11 +162,21 @@ class PanelPlacementApp {
             <div class="panel-item">
                 <div class="panel-info">
                     <div class="panel-size">${panel.width} × ${panel.height} cm</div>
-                    <div class="panel-area">${(panel.area / 10000).toFixed(2)} m²</div>
+                    <div class="panel-area">${(panel.area / 10000).toFixed(2)} m² × ${panel.count || 1} adet</div>
+                    <div class="panel-total">Toplam: ${((panel.area * (panel.count || 1)) / 10000).toFixed(2)} m²</div>
                 </div>
-                <button class="btn btn-danger" onclick="app.removePanel(${index})">
-                    <i class="fas fa-trash"></i>
-                </button>
+                <div class="panel-actions">
+                    <button class="btn btn-count" onclick="app.decreasePanel(${index})" title="Azalt">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <span class="panel-count-display">${panel.count || 1}</span>
+                    <button class="btn btn-count" onclick="app.increasePanel(${index})" title="Artır">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="btn btn-danger" onclick="app.removePanel(${index})" title="Sil">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>
         `).join('');
 
@@ -188,7 +236,7 @@ class PanelPlacementApp {
         // Her panel türü için yerleştirme dene
         for (const panel of sortedPanels) {
             let panelCount = 0;
-            let maxPanels = Math.floor((areaWidth * areaHeight) / panel.area) + 10; // Güvenlik için ekstra
+            const maxPanels = panel.count || 1; // Panel sayısı ile sınırla
 
             while (panelCount < maxPanels) {
                 let bestPosition = null;
@@ -680,6 +728,11 @@ class PanelPlacementApp {
         const saved = localStorage.getItem('panelPlacement_panels');
         if (saved) {
             this.panels = JSON.parse(saved);
+            // Eski panel verilerini yeni formata dönüştür
+            this.panels = this.panels.map(panel => ({
+                ...panel,
+                count: panel.count || 1 // Eğer count yoksa 1 olarak ata
+            }));
             this.updatePanelsList();
         }
     }
@@ -689,15 +742,16 @@ class PanelPlacementApp {
         // Eğer hiç panel yoksa varsayılan panelleri ekle
         if (this.panels.length === 0) {
             const defaultPanels = [
-                { width: 250, height: 125 },
-                { width: 40, height: 250 },
-                { width: 55, height: 250 }
+                { width: 250, height: 125, count: 10 },
+                { width: 40, height: 250, count: 5 },
+                { width: 55, height: 250, count: 5 }
             ];
             
             defaultPanels.forEach(panel => {
                 this.panels.push({ 
                     width: panel.width, 
                     height: panel.height, 
+                    count: panel.count,
                     area: panel.width * panel.height 
                 });
             });
